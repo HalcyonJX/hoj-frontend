@@ -1,11 +1,27 @@
 <script setup lang="ts">
 import { routes } from "@/router/routes";
 import { useRouter } from "vue-router";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useStore } from "vuex";
+import checkAccess from "@/access/checkAccess";
 
 const router = useRouter();
 const store = useStore();
+// 展示在菜单的路由数组
+const visibleRoutes = computed(() => {
+  return routes.filter((item, index) => {
+    if (item.meta?.hideInMenu) {
+      return false;
+    }
+    // 根据权限过滤菜单
+    if (
+      !checkAccess(store.state.user.loginUser, item?.meta?.access as string)
+    ) {
+      return false;
+    }
+    return true;
+  });
+});
 
 // 默认主页
 const selectedKeys = ref(["/"]);
@@ -19,7 +35,7 @@ router.afterEach((to, from, failure) => {
 setTimeout(() => {
   store.dispatch("user/getLoginUser", {
     userName: "古月方源",
-    role: "admin",
+    userRole: "admin",
   });
 }, 3000);
 
@@ -31,7 +47,7 @@ const doMenuClick = (key: string) => {
 </script>
 
 <template>
-  <a-row id="globalHeader" style="margin-bottom: 16px" align="center">
+  <a-row id="globalHeader" align="center" :wrap="false">
     <a-col flex="auto">
       <a-menu
         mode="horizontal"
@@ -48,7 +64,7 @@ const doMenuClick = (key: string) => {
             <div class="title">T1 OJ</div>
           </div>
         </a-menu-item>
-        <a-menu-item v-for="item in routes" :key="item.path">
+        <a-menu-item v-for="item in visibleRoutes" :key="item.path">
           {{ item.name }}
         </a-menu-item>
       </a-menu>
